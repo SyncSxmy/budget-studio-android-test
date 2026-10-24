@@ -26,6 +26,32 @@ jobs:
           java-version: '21'
       - name: Android SDK vorbereiten
         uses: android-actions/setup-android@v4
+      - name: Web-App-Dateien prüfen und vorbereiten
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f www/index.html ]; then
+            if [ -f index.html ]; then
+              echo "App-Dateien liegen im Repository-Hauptordner. Erstelle www/."
+              mkdir -p www
+              for file in index.html app.js style.css icon.svg manifest.webmanifest; do
+                if [ -f "$file" ]; then cp "$file" "www/$file"; fi
+              done
+            else
+              echo "FEHLER: Weder www/index.html noch index.html im Hauptordner gefunden."
+              echo "Bitte www/ aus dem Android-Starterprojekt ins Repository hochladen."
+              find . -maxdepth 3 -type f -not -path './.git/*' | sort | head -80
+              exit 1
+            fi
+          fi
+          for file in index.html app.js style.css icon.svg manifest.webmanifest; do
+            if [ ! -f "www/$file" ]; then
+              echo "FEHLER: www/$file fehlt. Bitte die vollständigen Web-Dateien hochladen."
+              exit 1
+            fi
+          done
+          echo "Alle Web-Dateien vorhanden:"
+          ls -lh www/
       - name: Capacitor installieren
         run: npm install --no-audit --no-fund
       - name: Android-Projekt erstellen
