@@ -1,0 +1,8 @@
+{
+  "appId": "de.budgetstudio.preview",
+  "appName": "Budget Studio Test",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
