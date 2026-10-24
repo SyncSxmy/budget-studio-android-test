@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Android SDK vorbereiten
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
       - name: Capacitor installieren
         run: npm install --no-audit --no-fund
       - name: Android-Projekt erstellen
