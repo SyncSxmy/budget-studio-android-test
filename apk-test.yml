@@ -26,32 +26,19 @@ jobs:
           java-version: '21'
       - name: Android SDK vorbereiten
         uses: android-actions/setup-android@v4
-      - name: Web-App-Dateien prüfen und vorbereiten
-        shell: bash
+      - name: Alle App-Dateien kontrollieren
         run: |
           set -euo pipefail
-          if [ ! -f www/index.html ]; then
-            if [ -f index.html ]; then
-              echo "App-Dateien liegen im Repository-Hauptordner. Erstelle www/."
-              mkdir -p www
-              for file in index.html app.js style.css icon.svg manifest.webmanifest business-extra.js media-extra.js crypto-extra.js orders-extra.js auth-extra.js finance-engine.js tool-planner.js home-tools.js; do
-                if [ -f "$file" ]; then cp "$file" "www/$file"; fi
-              done
-            else
-              echo "FEHLER: Weder www/index.html noch index.html im Hauptordner gefunden."
-              echo "Bitte www/ aus dem Android-Starterprojekt ins Repository hochladen."
-              find . -maxdepth 3 -type f -not -path './.git/*' | sort | head -80
-              exit 1
-            fi
+          # If this is the PWA repository, copy the whole web project to www/.
+          # Do not silently keep a stale www/ directory.
+          if [ ! -e www/index.html ] && [ -e index.html ]; then
+            mkdir -p www
+            cp -v index.html app.js style.css icon.svg manifest.webmanifest www/
+            for file in *-extra.js finance-engine.js tool-planner.js home-tools.js sw.js; do
+              if [ -f "$file" ]; then cp -v "$file" www/; fi
+            done
           fi
-          for file in index.html app.js style.css icon.svg manifest.webmanifest business-extra.js media-extra.js crypto-extra.js orders-extra.js auth-extra.js finance-engine.js tool-planner.js home-tools.js; do
-            if [ ! -f "www/$file" ]; then
-              echo "FEHLER: www/$file fehlt. Bitte die vollständigen Web-Dateien hochladen."
-              exit 1
-            fi
-          done
-          echo "Alle Web-Dateien vorhanden:"
-          ls -lh www/
+          python3 scripts/verify_android_bundle.py --source
       - name: Capacitor installieren
         run: npm install --no-audit --no-fund
       - name: Android-Projekt erstellen
@@ -63,10 +50,12 @@ jobs:
           chmod +x android/gradlew
           cd android
           ./gradlew assembleDebug --no-daemon
+      - name: APK-Dateien nach dem Build verifizieren
+        run: python3 scripts/verify_android_bundle.py --apk android/app/build/outputs/apk/debug/app-debug.apk
       - name: Installierbare Test-APK bereitstellen
         uses: actions/upload-artifact@v4
         with:
-          name: Budget-Studio-Android-Test-APK
+          name: Budget-Studio-Android-Test-APK-098-KOMPLETT
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
